@@ -15,7 +15,7 @@ export default function IncomePage() {
     fetchIncomes()
   }, [])
 
-  const fetchIncomes = async () => {
+  const fetchIncomes = async () => {    
     const response = await fetch('/api/incomes')
     const data = await response.json()
     setIncomes(data)
