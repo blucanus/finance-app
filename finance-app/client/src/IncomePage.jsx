@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/Alert"
 import { fetchIncomes, createIncome } from './api'
 
 export default function IncomePage() {
@@ -13,6 +14,7 @@ export default function IncomePage() {
   const [type, setType] = useState('efectivo')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
 
   useEffect(() => {
     const loadIncomes = async () => {
@@ -31,6 +33,16 @@ export default function IncomePage() {
     loadIncomes()
   }, [])
 
+  useEffect(() => {
+    let timer
+    if (successMessage) {
+      timer = setTimeout(() => {
+        setSuccessMessage(null)
+      }, 5000)
+    }
+    return () => clearTimeout(timer)
+  }, [successMessage])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -39,6 +51,7 @@ export default function IncomePage() {
       setName('')
       setAmount('')
       setType('efectivo')
+      setSuccessMessage('Ingreso registrado correctamente')
     } catch (err) {
       console.error('Error creating income:', err)
       setError('Error al crear el ingreso. Por favor, intenta de nuevo.')
@@ -78,6 +91,13 @@ export default function IncomePage() {
         </CardContent>
       </Card>
 
+      {successMessage && (
+        <Alert variant="success" onClose={() => setSuccessMessage(null)}>
+          <AlertTitle>Éxito</AlertTitle>
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Últimos Ingresos</CardTitle>
@@ -92,10 +112,14 @@ export default function IncomePage() {
           ) : (
             <ul className="space-y-2">
               {incomes.map((income) => (
-                <li key={income._id} className="flex justify-between items-center border-b pb-2">
+                <li key={income._id || income.id} className="flex justify-between items-center border-b pb-2">
                   <span className="font-medium">{income.name}</span>
-                  <span className="text-muted-foreground">${income.amount.toFixed(2)} - {income.type}</span>
-                  <span className="text-sm text-muted-foreground">{new Date(income.date).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground">
+                    ${typeof income.amount === 'number' ? income.amount.toFixed(2) : 'N/A'} - {income.type}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {income.date ? new Date(income.date).toLocaleDateString() : 'Fecha no disponible'}
+                  </span>
                 </li>
               ))}
             </ul>

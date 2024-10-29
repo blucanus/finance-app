@@ -5,7 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { DataTable } from '@/components/DataTable'
 import { fetchReport } from './api'
+
+// Función auxiliar para formatear moneda
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
+}
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState({ from: new Date(), to: new Date() })
@@ -15,11 +21,33 @@ export default function DashboardPage() {
   const generateReport = async () => {
     try {
       const data = await fetchReport(reportType, dateRange.from, dateRange.to)
-      setReportData(data.data)
+      const formattedData = data.data.map(item => ({
+        name: item._id, // Asumiendo que el nombre o tipo está en _id
+        total: Number(item.total),
+        formattedTotal: formatCurrency(item.total)
+      }))
+      setReportData(formattedData)
     } catch (error) {
       console.error('Error generating report:', error)
     }
   }
+
+  const columns = [
+    { key: 'name', label: reportType === 'by-type' ? 'Tipo' : 'Nombre' },
+    { key: 'formattedTotal', label: 'Total' },
+  ]
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 border border-gray-300 rounded shadow">
+          <p className="font-bold">{label}</p>
+          <p>{`Total: ${formatCurrency(payload[0].value)}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-8">
@@ -52,23 +80,38 @@ export default function DashboardPage() {
       </Card>
       
       {reportData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Reporte</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={reportData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="total" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Gráfico del Reporte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={reportData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    interval="preserveStartEnd"
+                    tickFormatter={(value) => value.length > 10 ? `${value.substr(0, 10)}...` : value}
+                  />
+                  <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="total" fill="#8884d8" name="Total" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tabla del Reporte</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable data={reportData} columns={columns} />
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   )
