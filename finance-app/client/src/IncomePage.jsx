@@ -4,35 +4,44 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { fetchIncomes, createIncome } from './api'
 
 export default function IncomePage() {
   const [incomes, setIncomes] = useState([])
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState('efectivo')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchIncomes()
-  }, [])
+    const loadIncomes = async () => {
+      try {
+        setIsLoading(true)
+        const data = await fetchIncomes()
+        setIncomes(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error('Error fetching incomes:', err)
+        setError('Error al cargar los ingresos. Por favor, intenta de nuevo más tarde.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  const fetchIncomes = async () => {    
-    const response = await fetch('/api/incomes')
-    const data = await response.json()
-    setIncomes(data)
-  }
+    loadIncomes()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const response = await fetch('/api/incomes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, amount: parseFloat(amount), type, date: new Date() }),
-    })
-    if (response.ok) {
+    try {
+      const newIncome = await createIncome({ name, amount: parseFloat(amount), type })
+      setIncomes(prevIncomes => [newIncome, ...prevIncomes])
       setName('')
       setAmount('')
       setType('efectivo')
-      fetchIncomes()
+    } catch (err) {
+      console.error('Error creating income:', err)
+      setError('Error al crear el ingreso. Por favor, intenta de nuevo.')
     }
   }
 
@@ -74,15 +83,23 @@ export default function IncomePage() {
           <CardTitle>Últimos Ingresos</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2">
-            {incomes.map((income) => (
-              <li key={income._id} className="flex justify-between items-center border-b pb-2">
-                <span className="font-medium">{income.name}</span>
-                <span className="text-muted-foreground">${income.amount.toFixed(2)} - {income.type}</span>
-                <span className="text-sm text-muted-foreground">{new Date(income.date).toLocaleDateString()}</span>
-              </li>
-            ))}
-          </ul>
+          {isLoading ? (
+            <p>Cargando ingresos...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : incomes.length === 0 ? (
+            <p>No hay ingresos registrados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {incomes.map((income) => (
+                <li key={income._id} className="flex justify-between items-center border-b pb-2">
+                  <span className="font-medium">{income.name}</span>
+                  <span className="text-muted-foreground">${income.amount.toFixed(2)} - {income.type}</span>
+                  <span className="text-sm text-muted-foreground">{new Date(income.date).toLocaleDateString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

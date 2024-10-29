@@ -1,12 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Conectado a MongoDB'))
     .catch((err) => console.error('Error de conexión a MongoDB:', err));
-
-const cors = require('cors');
 
 const incomeRoutes = require('./routes/incomeRoutes');
 const reportRoutes = require('./routes/reportRoutes');
@@ -15,7 +14,7 @@ const app = express();
 
 // Configuración de CORS
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000', // Ajusta esto a la URL de tu cliente
+    origin: process.env.CLIENT_URL || 'http://localhost:5173', // Ajusta esto a la URL de tu cliente
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

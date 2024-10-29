@@ -5,16 +5,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { fetchReport } from './api'
 
 export default function DashboardPage() {
   const [dateRange, setDateRange] = useState({ from: new Date(), to: new Date() })
-  const [reportType, setReportType] = useState('date')
+  const [reportType, setReportType] = useState('date-range')
   const [reportData, setReportData] = useState([])
 
   const generateReport = async () => {
-    const response = await fetch(`/api/report?type=${reportType}&from=${dateRange.from.toISOString()}&to=${dateRange.to.toISOString()}`)
-    const data = await response.json()
-    setReportData(data)
+    try {
+      const data = await fetchReport(reportType, dateRange.from, dateRange.to)
+      setReportData(data.data)
+    } catch (error) {
+      console.error('Error generating report:', error)
+    }
   }
 
   return (
@@ -36,9 +40,9 @@ export default function DashboardPage() {
                   <SelectValue placeholder="Seleccione el tipo de reporte" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="date">Por Fecha</SelectItem>
-                  <SelectItem value="type">Por Tipo</SelectItem>
-                  <SelectItem value="name">Por Nombre</SelectItem>
+                  <SelectItem value="date-range">Por Fecha</SelectItem>
+                  <SelectItem value="by-type">Por Tipo</SelectItem>
+                  <SelectItem value="by-name">Por Nombre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
