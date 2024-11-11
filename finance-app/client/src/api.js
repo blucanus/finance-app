@@ -31,13 +31,26 @@ export const createIncome = async (incomeData) => {
 };
 
 export const fetchReport = async (reportType, startDate, endDate) => {
-  const params = new URLSearchParams({
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-  });
-  const response = await fetch(`${API_BASE_URL}/reports/${reportType}?${params}`);
-  if (!response.ok) {
-    throw new Error(`Error fetching ${reportType} report`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/reports/${reportType}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
+    
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Server response:', text);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error('Unexpected content type:', contentType);
+      console.error('Server response:', text);
+      throw new Error("Oops, we haven't got JSON!");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error in fetchReport:', error);
+    throw error;
   }
-  return response.json();
 };

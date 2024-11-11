@@ -22,7 +22,13 @@ exports.getIncomesByDateRange = async (req, res) => {
 
 exports.getIncomesByType = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
     const incomesByType = await Income.aggregate([
+      {
+        $match: {
+          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+        }
+      },
       {
         $group: {
           _id: '$type',
@@ -46,12 +52,19 @@ exports.getIncomesByType = async (req, res) => {
 
 exports.getIncomesByName = async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
     const incomesByName = await Income.aggregate([
+      {
+        $match: {
+          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+        }
+      },
       {
         $group: {
           _id: '$name',
           total: { $sum: '$amount' },
-          count: { $sum: 1 }
+          type: { $first: '$type' },
+          date: { $first: '$date' }
         }
       },
       { $sort: { total: -1 } }

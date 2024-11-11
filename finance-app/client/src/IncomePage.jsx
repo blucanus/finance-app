@@ -98,7 +98,7 @@ export default function IncomePage() {
         </Alert>
       )}
 
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Últimos Ingresos</CardTitle>
         </CardHeader>
@@ -125,7 +125,7 @@ export default function IncomePage() {
             </ul>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }
