@@ -9,6 +9,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 const incomeRoutes = require('./routes/incomeRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
@@ -32,3 +34,4 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+

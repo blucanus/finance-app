@@ -5,6 +5,9 @@ const {
   getIncomesByType,
   getIncomesByName
 } = require('../controllers/reportController');
+const { getBalance } = require('../controllers/reportController');
+
+router.get('/balance', getBalance);
 
 router.get('/date-range', getIncomesByDateRange);
 router.get('/by-type', getIncomesByType);
