@@ -8,11 +8,23 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { DataTable } from '@/components/DataTable'
 import { fetchReport } from './api'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { fetchBalance } from './api'
 
 // Función auxiliar para formatear moneda
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 }
+
+const MetricCard = ({ title, value, className }) => (
+  <Card className={className}>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+    </CardContent>
+  </Card>
+);
 
 const CustomTooltip = ({ active, payload, label, reportType }) => {
   if (active && payload && payload.length) {
@@ -39,6 +51,7 @@ export default function DashboardPage() {
   const [reportData, setReportData] = useState([])
   const [error, setError] = useState(null)
   const [noDataMessage, setNoDataMessage] = useState(null)
+  const [balanceData, setBalanceData] = useState(null);
 
   useEffect(() => {
     if (noDataMessage) {
@@ -51,27 +64,31 @@ export default function DashboardPage() {
 
   const generateReport = async () => {
     try {
-      setError(null)
-      const data = await fetchReport(reportType, new Date(startDate), new Date(endDate))
-      console.log(data);
+      setError(null);
+      const [reportResponse, balanceResponse] = await Promise.all([
+        fetchReport(reportType, new Date(startDate), new Date(endDate)),
+        fetchBalance(new Date(startDate), new Date(endDate))
+      ]);
       
-      const formattedData = data.data.map(item => ({
+      const formattedData = reportResponse.data.map(item => ({
         name: item._id,
         total: Number(item.total),
         formattedTotal: formatCurrency(item.total),
         type: item.type || 'N/A',
         date: item.date ? new Date(item.date).toLocaleDateString() : 'N/A'
       }))
-      setReportData(formattedData)
-      if (formattedData.length === 0) {
-        setNoDataMessage("No hay registros cargados para el rango de fechas seleccionado.")
-      }
-      
-    } catch (error) {
-      console.error('Error generating report:', error)
-      setError(error.message || 'An error occurred while generating the report.')
+      setReportData(formattedData);
+    setBalanceData(balanceResponse.data);
+    
+    if (formattedData.length === 0) {
+      setNoDataMessage("No hay registros cargados...");
     }
+    
+  } catch (error) {
+    console.error('Error generating report:', error);
+    setError(error.message || 'Error al generar el reporte');
   }
+};
 
   const columns = [
     { key: 'name', label: reportType === 'by-type' ? 'Tipo' : 'Nombre' },
@@ -140,7 +157,25 @@ export default function DashboardPage() {
           <AlertDescription>{noDataMessage}</AlertDescription>
         </Alert>
       )}
-      
+      {balanceData && (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <MetricCard
+      title="Total Ingresos"
+      value={formatCurrency(balanceData.incomeTotal)}
+      className="bg-green-50 border-green-200"
+    />
+    <MetricCard
+      title="Total Gastos"
+      value={formatCurrency(balanceData.expenseTotal)}
+      className="bg-red-50 border-red-200"
+    />
+    <MetricCard
+      title="Balance General"
+      value={formatCurrency(balanceData.balance)}
+      className={balanceData.balance >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}
+    />
+  </div>
+)}
       {reportData.length > 0 && (
         <>
           <Card>
@@ -175,6 +210,7 @@ export default function DashboardPage() {
           </Card>
         </>
       )}
+
     </div>
   )
 }

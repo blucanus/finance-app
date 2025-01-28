@@ -54,3 +54,33 @@ export const fetchReport = async (reportType, startDate, endDate) => {
     throw error;
   }
 };
+
+
+export const fetchExpenses = async () => {
+  const response = await fetch(`${API_BASE_URL}/expenses`);
+  if (!response.ok) throw new Error('Error fetching expenses');
+  return response.json();
+};
+
+export const createExpense = async (expenseData) => {
+  const response = await fetch(`${API_BASE_URL}/expenses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(expenseData)
+  });
+  if (!response.ok) throw new Error('Error creating expense');
+  return response.json();
+};
+
+export const fetchBalance = async (startDate, endDate) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/reports/balance?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+    );
+    if (!response.ok) throw new Error('Error fetching balance');
+    return response.json();
+  } catch (error) {
+    console.error('Error in fetchBalance:', error);
+    throw error;
+  }
+};

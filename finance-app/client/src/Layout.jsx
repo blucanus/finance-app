@@ -16,6 +16,9 @@ export default function Layout() {
               <Button asChild variant="ghost">
                 <Link to="/dashboard">Dashboard</Link>
               </Button>
+              <Button asChild variant="ghost">
+                <Link to="/expenses">Gastos</Link>
+              </Button>
             </div>
           </nav>
         </div>
