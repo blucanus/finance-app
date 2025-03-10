@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { DataTable } from '@/components/DataTable'
-import { fetchReport, fetchBalance } from './api'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DataTable } from '@/components/DataTable';
+import { fetchReport, fetchBalance, fetchDetailedIncomes, fetchDetailedExpenses } from './api';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formatCurrency = (value) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
-}
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
+};
 
 const CustomTooltip = ({ active, payload, label, reportType }) => {
   if (active && payload && payload.length) {
@@ -26,10 +26,10 @@ const CustomTooltip = ({ active, payload, label, reportType }) => {
           </>
         )}
       </div>
-    )
+    );
   }
-  return null
-}
+  return null;
+};
 
 const MetricCard = ({ title, value, className }) => (
   <Card className={`${className} transition-all duration-300 hover:shadow-md`}>
@@ -46,35 +46,88 @@ const MetricCard = ({ title, value, className }) => (
       </div>
     </CardContent>
   </Card>
-)
+);
+
+const DetailsTable = ({ data, columns, title }) => (
+  <Card className="h-full">
+    <CardHeader>
+      <CardTitle className="text-lg">{title}</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <DataTable
+        data={data}
+        columns={columns}
+        pagination={true}
+        itemsPerPage={5}
+        searchKey="name"
+      />
+    </CardContent>
+  </Card>
+);
 
 export default function DashboardPage() {
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
-  const [reportType, setReportType] = useState('by-type')
-  const [reportData, setReportData] = useState([])
-  const [balanceData, setBalanceData] = useState(null)
-  const [error, setError] = useState(null)
-  const [noDataMessage, setNoDataMessage] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reportType, setReportType] = useState('by-type');
+  const [reportData, setReportData] = useState([]);
+  const [balanceData, setBalanceData] = useState(null);
+  const [incomesData, setIncomesData] = useState([]);
+  const [expensesData, setExpensesData] = useState([]);
+  const [error, setError] = useState(null);
+  const [noDataMessage, setNoDataMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (noDataMessage) {
-      const timer = setTimeout(() => setNoDataMessage(null), 5000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setNoDataMessage(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }, [noDataMessage])
+  }, [noDataMessage]);
+
+  const incomeColumns = [
+    { 
+      key: 'date', 
+      label: 'Fecha', 
+      format: (value) => new Date(value).toLocaleDateString('es-AR') 
+    },
+    { key: 'name', label: 'Nombre' },
+    { 
+      key: 'amount', 
+      label: 'Monto', 
+      format: formatCurrency 
+    },
+    { key: 'type', label: 'Método' }
+  ];
+
+  const expenseColumns = [
+    { 
+      key: 'date', 
+      label: 'Fecha', 
+      format: (value) => new Date(value).toLocaleDateString('es-AR') 
+    },
+    { key: 'name', label: 'Descripción' },
+    { 
+      key: 'amount', 
+      label: 'Monto', 
+      format: formatCurrency 
+    },
+    { key: 'category', label: 'Categoría' }
+  ];
 
   const generateReport = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
-      setBalanceData(null)
+      setIsLoading(true);
+      setError(null);
+      setBalanceData(null);
+      setIncomesData([]);
+      setExpensesData([]);
       
-      const [reportResponse, balanceResponse] = await Promise.all([
-        fetchReport(reportType, new Date(startDate), new Date(endDate)),
-        fetchBalance(new Date(startDate), new Date(endDate))
-      ])
+      const [reportResponse, balanceResponse, incomesResponse, expensesResponse] = await Promise.all([
+        fetchReport(reportType, startDate, endDate),
+        fetchBalance(startDate, endDate),
+        fetchDetailedIncomes(startDate, endDate),
+        fetchDetailedExpenses(startDate, endDate)
+      ]);
 
       const formattedData = reportResponse.data.map(item => ({
         name: item._id,
@@ -82,31 +135,24 @@ export default function DashboardPage() {
         formattedTotal: formatCurrency(item.total),
         type: item.type || 'N/A',
         date: item.date ? new Date(item.date).toLocaleDateString() : 'N/A'
-      }))
+      }));
 
-      setReportData(formattedData)
-      setBalanceData(balanceResponse.data)
+      setReportData(formattedData);
+      setBalanceData(balanceResponse.data);
+      setIncomesData(incomesResponse.data);
+      setExpensesData(expensesResponse.data);
       
-      if (formattedData.length === 0) {
-        setNoDataMessage("No hay registros cargados para el rango de fechas seleccionado.")
+      if (formattedData.length === 0 && incomesResponse.data.length === 0 && expensesResponse.data.length === 0) {
+        setNoDataMessage("No hay registros cargados para el rango de fechas seleccionado.");
       }
       
     } catch (error) {
-      console.error('Error generating report:', error)
-      setError(error.message || 'Error al generar el reporte')
+      console.error('Error generating report:', error);
+      setError(error.message || 'Error al generar el reporte');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
-  const columns = [
-    { key: 'name', label: reportType === 'by-type' ? 'Tipo' : 'Nombre' },
-    { key: 'formattedTotal', label: 'Total' },
-    ...(reportType === 'by-name' ? [
-      { key: 'type', label: 'Tipo' },
-      { key: 'date', label: 'Fecha' }
-    ] : [])
-  ]
+  };
 
   return (
     <div className="space-y-8">
@@ -194,11 +240,24 @@ export default function DashboardPage() {
         </div>
       )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <DetailsTable
+          data={incomesData}
+          columns={incomeColumns}
+          title="📈 Detalle de Ingresos"
+        />
+        <DetailsTable
+          data={expensesData}
+          columns={expenseColumns}
+          title="📉 Detalle de Gastos"
+        />
+      </div>
+
       {reportData.length > 0 && (
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Visualización de Datos</CardTitle>
+              <CardTitle>Análisis Gráfico</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[400px]">
@@ -230,12 +289,19 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Detalles del Reporte</CardTitle>
+              <CardTitle>Resumen Consolidado</CardTitle>
             </CardHeader>
             <CardContent>
               <DataTable
                 data={reportData}
-                columns={columns}
+                columns={[
+                  { key: 'name', label: reportType === 'by-type' ? 'Tipo' : 'Nombre' },
+                  { key: 'formattedTotal', label: 'Total' },
+                  ...(reportType === 'by-name' ? [
+                    { key: 'type', label: 'Tipo' },
+                    { key: 'date', label: 'Fecha' }
+                  ] : [])
+                ]}
                 searchKey="name"
                 pagination={true}
                 itemsPerPage={5}
@@ -245,5 +311,5 @@ export default function DashboardPage() {
         </>
       )}
     </div>
-  )
+  );
 }
