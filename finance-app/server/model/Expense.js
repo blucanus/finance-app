@@ -1,21 +1,20 @@
-// model/Expense.js
 const mongoose = require('mongoose');
 
 const ExpenseSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Por favor proporcione un nombre para el gasto'],
+    required: [true, 'Nombre del gasto requerido'],
     trim: true,
-    maxlength: [100, 'El nombre no puede tener más de 100 caracteres']
+    maxlength: 100
   },
   amount: {
     type: Number,
-    required: [true, 'Por favor proporcione una cantidad'],
-    min: [0, 'La cantidad no puede ser negativa']
+    required: [true, 'Monto requerido'],
+    min: [0, 'El monto no puede ser negativo']
   },
   category: {
     type: String,
-    required: [true, 'Por favor especifique la categoría'],
+    required: true,
     enum: ['comida', 'transporte', 'vivienda', 'entretenimiento', 'salud', 'otros'],
     default: 'otros'
   },
@@ -26,10 +25,5 @@ const ExpenseSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Método para formatear la cantidad
-ExpenseSchema.methods.formatAmount = function() {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(this.amount);
-};
 
 module.exports = mongoose.model('Expense', ExpenseSchema);

@@ -1,4 +1,3 @@
-// controllers/expenseController.js
 const Expense = require('../model/Expense');
 
 exports.createExpense = async (req, res) => {
@@ -19,5 +18,3 @@ exports.getExpenses = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-// Agregar más métodos según necesidad (update, delete, reports)

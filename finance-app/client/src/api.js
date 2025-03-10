@@ -74,13 +74,22 @@ export const createExpense = async (expenseData) => {
 
 export const fetchBalance = async (startDate, endDate) => {
   try {
+    // Formatear fechas a YYYY-MM-DD
+    const start = new Date(startDate).toISOString().split('T')[0];
+    const end = new Date(endDate).toISOString().split('T')[0];
+    
     const response = await fetch(
-      `${API_BASE_URL}/reports/balance?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      `${API_BASE_URL}/reports/balance?startDate=${start}&endDate=${end}`
     );
-    if (!response.ok) throw new Error('Error fetching balance');
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error fetching balance');
+    }
+    
     return response.json();
   } catch (error) {
-    console.error('Error in fetchBalance:', error);
-    throw error;
+    console.error('Error en fetchBalance:', error);
+    throw new Error(error.message || 'Error al obtener el balance');
   }
 };

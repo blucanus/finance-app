@@ -1,32 +1,16 @@
 const Income = require('../model/Income');
-
-exports.getIncomesByDateRange = async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const incomes = await Income.find({
-      date: { $gte: new Date(startDate), $lte: new Date(endDate) }
-    }).sort('date');
-    
-    res.status(200).json({
-      success: true,
-      count: incomes.length,
-      data: incomes
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
+const Expense = require('../model/Expense');
 
 exports.getIncomesByType = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
     const incomesByType = await Income.aggregate([
       {
         $match: {
-          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+          date: { $gte: start, $lte: end }
         }
       },
       {
@@ -38,25 +22,22 @@ exports.getIncomesByType = async (req, res) => {
       }
     ]);
     
-    res.status(200).json({
-      success: true,
-      data: incomesByType
-    });
+    res.status(200).json({ success: true, data: incomesByType });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
 exports.getIncomesByName = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
     const incomesByName = await Income.aggregate([
       {
         $match: {
-          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+          date: { $gte: start, $lte: end }
         }
       },
       {
@@ -70,69 +51,53 @@ exports.getIncomesByName = async (req, res) => {
       { $sort: { total: -1 } }
     ]);
     
-    res.status(200).json({
-      success: true,
-      data: incomesByName
-    });
+    res.status(200).json({ success: true, data: incomesByName });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
+    res.status(400).json({ success: false, error: error.message });
   }
 };
-// reportController.js (agregar este nuevo método)
+
 exports.getBalance = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    // Calcular total de ingresos
-    const incomeResult = await Income.aggregate([
-      {
-        $match: {
-          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$amount" }
-        }
-      }
-    ]);
-    
-    // Calcular total de gastos
-    const expenseResult = await Expense.aggregate([
-      {
-        $match: {
-          date: { $gte: new Date(startDate), $lte: new Date(endDate) }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$amount" }
-        }
-      }
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Se requieren ambas fechas'
+      });
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const [incomeResult, expenseResult] = await Promise.all([
+      Income.aggregate([
+        { $match: { date: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]),
+      Expense.aggregate([
+        { $match: { date: { $gte: start, $lte: end } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ])
     ]);
 
     const incomeTotal = incomeResult[0]?.total || 0;
     const expenseTotal = expenseResult[0]?.total || 0;
-    const balance = incomeTotal - expenseTotal;
 
     res.status(200).json({
       success: true,
       data: {
         incomeTotal,
         expenseTotal,
-        balance
+        balance: incomeTotal - expenseTotal
       }
     });
     
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error en getBalance:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
