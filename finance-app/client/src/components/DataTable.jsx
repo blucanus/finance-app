@@ -23,7 +23,9 @@ export function DataTable({ data, columns }) {
         {data.map((row, index) => (
           <TableRow key={index}>
             {columns.map((column) => (
-              <TableCell key={column.key}>{row[column.key]}</TableCell>
+              <TableCell key={column.key}>
+                {column.format ? column.format(row[column.key]) : row[column.key]}
+              </TableCell>
             ))}
           </TableRow>
         ))}
@@ -38,6 +40,7 @@ DataTable.propTypes = {
     PropTypes.shape({
       key: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      format: PropTypes.func, // Añadido soporte para la función format
     })
   ).isRequired,
 }

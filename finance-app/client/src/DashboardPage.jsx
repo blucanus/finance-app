@@ -84,36 +84,78 @@ export default function DashboardPage() {
     }
   }, [noDataMessage]);
 
-  const incomeColumns = [
-    { 
-      key: 'date', 
-      label: 'Fecha', 
-      format: (value) => new Date(value).toLocaleDateString('es-AR') 
-    },
-    { key: 'name', label: 'Nombre' },
-    { 
-      key: 'amount', 
-      label: 'Monto', 
-      format: formatCurrency 
-    },
-    { key: 'type', label: 'Método' }
-  ];
+  // Reemplaza completamente tu función formatDate actual con esta versión
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    // Crear objeto Date a partir del string
+    const date = new Date(dateString);
+    
+    // Verificar si es una fecha válida
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
+    
+    // Configurar opciones para formatear a zona horaria de Argentina
+    const formatter = new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    // Obtener las partes de la fecha formateada
+    const parts = formatter.formatToParts(date);
+    
+    // Crear un objeto con las partes de la fecha
+    const dateObj = parts.reduce((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+    
+    // Construir el formato deseado: DD - MM - YYYY, HH:MM
+    return `${dateObj.day} - ${dateObj.month} - ${dateObj.year}, ${dateObj.hour}:${dateObj.minute}`;
+  } catch (error) {
+    console.error('Error al formatear fecha:', error);
+    return 'Error de formato';
+  }
+};
+  
+// Columnas para Ingresos
+const incomeColumns = [
+  { 
+    key: 'date', 
+    label: 'Fecha y Hora',
+    format: (value) => formatDate(value)
+  },
+  { key: 'name', label: 'Nombre' },
+  { 
+    key: 'amount', 
+    label: 'Monto', 
+    format: formatCurrency 
+  },
+  { key: 'type', label: 'Método' }
+];
 
-  const expenseColumns = [
-    { 
-      key: 'date', 
-      label: 'Fecha', 
-      format: (value) => new Date(value).toLocaleDateString('es-AR') 
-    },
-    { key: 'name', label: 'Descripción' },
-    { 
-      key: 'amount', 
-      label: 'Monto', 
-      format: formatCurrency 
-    },
-    { key: 'category', label: 'Categoría' }
-  ];
-
+// Columnas para Gastos
+const expenseColumns = [
+  { 
+    key: 'date', 
+    label: 'Fecha y Hora',
+    format: (value) => formatDate(value)
+  },
+  { key: 'name', label: 'Descripción' },
+  { 
+    key: 'amount', 
+    label: 'Monto', 
+    format: formatCurrency 
+  },
+  { key: 'category', label: 'Categoría' }
+];
   const generateReport = async () => {
     try {
       setIsLoading(true);
